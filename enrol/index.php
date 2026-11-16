@@ -97,16 +97,29 @@ if (is_enrolled($context, $USER, '', true)) {
 include_once($CFG->dirroot . '/mod/quiz/spoken-config.php');
 $attendance_marked = false;
 $att_sql = "SELECT id FROM events_testattendance WHERE mdluser_id = ? AND mdlcourse_id = ? AND status >= 1";
+
+$mysqli_status = isset($mysqli) ? (is_object($mysqli) ? 'object(' . get_class($mysqli) . ')' : gettype($mysqli)) : 'NOT SET';
+error_log("SPKDEBUG: [enrol/index.php] Checking test attendance for userid=" . $USER->id . ", courseid=" . $course->id . "; \$mysqli=" . $mysqli_status);
+
 if (isset($mysqli) && $stmt = $mysqli->prepare($att_sql)) {
     $stmt->bind_param("ii", $USER->id, $course->id);
     $stmt->execute();
     $att_res = $stmt->get_result();
     $attendance_marked = ($att_res && $att_res->num_rows > 0);
+    error_log("SPKDEBUG: [enrol/index.php] Attendance query executed. num_rows=" . ($att_res ? $att_res->num_rows : 'false') . ", attendance_marked=" . ($attendance_marked ? 'true' : 'false'));
     $stmt->close();
+} else {
+    if (!isset($mysqli)) {
+        error_log("SPKDEBUG: [enrol/index.php] \$mysqli is NOT SET after including spoken-config.php");
+    } else {
+        error_log("SPKDEBUG: [enrol/index.php] \$mysqli->prepare failed: " . ($mysqli->error ?? 'unknown error'));
+    }
 }
 if ($course->id == 7 || is_siteadmin()) {
     $attendance_marked = true;
+    error_log("SPKDEBUG: [enrol/index.php] Attendance check bypassed (course 7 or siteadmin)");
 }
+error_log("SPKDEBUG: [enrol/index.php] Final attendance_marked=" . ($attendance_marked ? 'true' : 'false'));
 
 if (!$attendance_marked) {
     $PAGE->set_title($course->shortname);
