@@ -260,24 +260,54 @@ class enrol_self_plugin extends enrol_plugin {
             $attendance_marked = false;
 
             $mysqli_status = isset($mysqli) ? (is_object($mysqli) ? 'object(' . get_class($mysqli) . ')' : gettype($mysqli)) : 'NOT SET';
-            error_log("SPKDEBUG: [enrol/self/lib.php] Checking test attendance for userid=" . $USER->id . ", courseid=" . $instance->courseid . "; \$mysqli=" . $mysqli_status);
+            error_log(
+                "[" . date("Y-m-d H:i:s") . "] " .
+                __FILE__ . ":" . __LINE__ .
+                " SPKDEBUG: Checking test attendance for userid=" . $USER->id . ", courseid=" . $instance->courseid . "; \$mysqli=" . $mysqli_status . PHP_EOL,
+                3,
+                "/var/log/moodle-debug/debug.log"
+            );
 
             if (isset($mysqli) && $stmt = $mysqli->prepare($att_sql)) {
                 $stmt->bind_param("ii", $USER->id, $instance->courseid);
                 $stmt->execute();
                 $att_res = $stmt->get_result();
                 $attendance_marked = ($att_res && $att_res->num_rows > 0);
-                error_log("SPKDEBUG: [enrol/self/lib.php] Attendance query executed. num_rows=" . ($att_res ? $att_res->num_rows : 'false') . ", attendance_marked=" . ($attendance_marked ? 'true' : 'false'));
+                error_log(
+                    "[" . date("Y-m-d H:i:s") . "] " .
+                    __FILE__ . ":" . __LINE__ .
+                    " SPKDEBUG: Attendance query executed. num_rows=" . ($att_res ? $att_res->num_rows : 'false') . ", attendance_marked=" . ($attendance_marked ? 'true' : 'false') . PHP_EOL,
+                    3,
+                    "/var/log/moodle-debug/debug.log"
+                );
                 $stmt->close();
             } else {
                 if (!isset($mysqli)) {
-                    error_log("SPKDEBUG: [enrol/self/lib.php] \$mysqli is NOT SET after including spoken-config.php");
+                    error_log(
+                        "[" . date("Y-m-d H:i:s") . "] " .
+                        __FILE__ . ":" . __LINE__ .
+                        " SPKDEBUG: \$mysqli is NOT SET after including spoken-config.php" . PHP_EOL,
+                        3,
+                        "/var/log/moodle-debug/debug.log"
+                    );
                 } else {
-                    error_log("SPKDEBUG: [enrol/self/lib.php] \$mysqli->prepare failed: " . ($mysqli->error ?? 'unknown error'));
+                    error_log(
+                        "[" . date("Y-m-d H:i:s") . "] " .
+                        __FILE__ . ":" . __LINE__ .
+                        " SPKDEBUG: \$mysqli->prepare failed: " . ($mysqli->error ?? 'unknown error') . PHP_EOL,
+                        3,
+                        "/var/log/moodle-debug/debug.log"
+                    );
                 }
             }
             if (!$attendance_marked) {
-                error_log("SPKDEBUG: [enrol/self/lib.php] Rejecting self enrollment: attendance not marked");
+                error_log(
+                    "[" . date("Y-m-d H:i:s") . "] " .
+                    __FILE__ . ":" . __LINE__ .
+                    " SPKDEBUG: Rejecting self enrollment: attendance not marked" . PHP_EOL,
+                    3,
+                    "/var/log/moodle-debug/debug.log"
+                );
                 return 'You cannot enroll for this test as your attendance is not marked.';
             }
         }
