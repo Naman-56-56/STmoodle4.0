@@ -96,13 +96,41 @@ if (is_enrolled($context, $USER, '', true)) {
 /* verify test attendance before allowing course enrollment */
 include_once($CFG->dirroot . '/mod/quiz/spoken-config.php');
 $attendance_marked = false;
-$att_sql = "SELECT id FROM events_testattendance WHERE mdluser_id = ? AND mdlcourse_id = ? AND status >= 1";
-if (isset($mysqli) && $stmt = $mysqli->prepare($att_sql)) {
-    $stmt->bind_param("ii", $USER->id, $course->id);
-    $stmt->execute();
-    $att_res = $stmt->get_result();
-    $attendance_marked = ($att_res && $att_res->num_rows > 0);
-    $stmt->close();
+
+// add quiz context checking to ensure attendance is verified for the specific quiz rather than granting broad course enrollment
+$quizid = optional_param('quizid', 0, PARAM_INT);
+if (!$quizid && !empty($SESSION->wantsurl)) {
+    $parsed_url = parse_url($SESSION->wantsurl);
+    if (!empty($parsed_url['query'])) {
+        parse_str($parsed_url['query'], $query_params);
+        if (!empty($query_params['id'])) {
+            if ($cm = get_coursemodule_from_id('quiz', (int)$query_params['id'])) {
+                $quizid = (int)$cm->instance;
+            }
+        } else if (!empty($query_params['q'])) {
+            $quizid = (int)$query_params['q'];
+        }
+    }
+}
+
+if ($quizid) {
+    $att_sql = "SELECT id FROM events_testattendance WHERE mdluser_id = ? AND mdlcourse_id = ? AND mdlquiz_id = ? AND status >= 1";
+    if (isset($mysqli) && $stmt = $mysqli->prepare($att_sql)) {
+        $stmt->bind_param("iii", $USER->id, $course->id, $quizid);
+        $stmt->execute();
+        $att_res = $stmt->get_result();
+        $attendance_marked = ($att_res && $att_res->num_rows > 0);
+        $stmt->close();
+    }
+} else {
+    $att_sql = "SELECT id FROM events_testattendance WHERE mdluser_id = ? AND mdlcourse_id = ? AND status >= 1";
+    if (isset($mysqli) && $stmt = $mysqli->prepare($att_sql)) {
+        $stmt->bind_param("ii", $USER->id, $course->id);
+        $stmt->execute();
+        $att_res = $stmt->get_result();
+        $attendance_marked = ($att_res && $att_res->num_rows > 0);
+        $stmt->close();
+    }
 }
 if ($course->id == 7 || is_siteadmin()) {
     $attendance_marked = true;

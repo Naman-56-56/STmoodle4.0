@@ -30,7 +30,8 @@ require_once(__DIR__ . '/../../config.php');
 require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 
 
-$UPDATE_MDLUSER = "update events_testattendance set status = 2, mdlattempt_id = ?, mdluser_firstname = ?, mdluser_lastname = ? where mdluser_id = ? and mdlcourse_id = ? and mdlquiz_id = ?";
+// Fix: Filter by status = 1 to prevent re attempts from overwriting historical attempts or resetting completed status
+$UPDATE_MDLUSER = "update events_testattendance set status = 2, mdlattempt_id = ?, mdluser_firstname = ?, mdluser_lastname = ? where mdluser_id = ? and mdlcourse_id = ? and mdlquiz_id = ? and status = 1";
 
 // Get submitted parameters.
 $id = required_param('cmid', PARAM_INT); // Course module id
