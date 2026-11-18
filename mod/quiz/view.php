@@ -273,6 +273,13 @@ if(!empty($viewobj->attempts)){
         }
         // When re attempt begins
         if ('finished' !== $a->state) {
+            error_log(
+                "[" . date("Y-m-d H:i:s") . "] " .
+                __FILE__ . ":" . __LINE__ .
+                " SPKDEBUG: Re-attempt query check START. attempt_state=" . $a->state . ", attempt_id=" . $a->id . ", attempt_quiz=" . $a->quiz . ", courseid=" . $quiz->course . ", USER->id=" . $USER->id . ", USER->email=" . ($USER->email ?? 'none') . PHP_EOL,
+                3,
+                "/var/log/moodle-debug/debug.log"
+            );
             // use prepared statement instead of direct SQL string interpolation
             $sql = "select id from events_testattendance where mdluser_id = ? and mdlcourse_id = ? and mdlquiz_id = ? and mdlattempt_id = ? and status <= 3";
 
@@ -281,7 +288,22 @@ if(!empty($viewobj->attempts)){
                 $stmt->execute();
                 $result = $stmt->get_result();
                 $count = $result ? $result->num_rows : 0;
+                error_log(
+                    "[" . date("Y-m-d H:i:s") . "] " .
+                    __FILE__ . ":" . __LINE__ .
+                    " SPKDEBUG: Re-attempt query check EXECUTED. bound=[email=" . $USER->email . ", course=" . $quiz->course . ", quiz=" . $a->quiz . ", attempt=" . $a->id . "], num_rows=" . $count . ", mysqli_error=" . ($mysqli->error ?? 'none') . PHP_EOL,
+                    3,
+                    "/var/log/moodle-debug/debug.log"
+                );
                 $stmt->close();
+            } else {
+                error_log(
+                    "[" . date("Y-m-d H:i:s") . "] " .
+                    __FILE__ . ":" . __LINE__ .
+                    " SPKDEBUG: Re-attempt query prepare FAILED. error=" . ($mysqli->error ?? 'none') . PHP_EOL,
+                    3,
+                    "/var/log/moodle-debug/debug.log"
+                );
             }
             break;
         }

@@ -30,8 +30,7 @@ require_once(__DIR__ . '/../../config.php');
 require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 
 
-// Fix: Filter by status = 1 to prevent re attempts from overwriting historical attempts or resetting completed status
-$UPDATE_MDLUSER = "update events_testattendance set status = 2, mdlattempt_id = ?, mdluser_firstname = ?, mdluser_lastname = ? where mdluser_id = ? and mdlcourse_id = ? and mdlquiz_id = ? and status = 1";
+$UPDATE_MDLUSER = "update events_testattendance set status = 2, mdlattempt_id = ?, mdluser_firstname = ?, mdluser_lastname = ? where mdluser_id = ? and mdlcourse_id = ? and mdlquiz_id = ? ";
 
 // Get submitted parameters.
 $id = required_param('cmid', PARAM_INT); // Course module id
@@ -141,9 +140,23 @@ $attempt = quiz_prepare_and_start_new_attempt($quizobj, $attemptnumber, $lastatt
 */
 
 /* where you run the query */
+error_log(
+    "[" . date("Y-m-d H:i:s") . "] " .
+    __FILE__ . ":" . __LINE__ .
+    " SPKDEBUG: startattempt.php executing UPDATE_MDLUSER. attempt_id=" . $attempt->id . ", user_id=" . $USER->id . ", course_id=" . $cm->course . ", quiz_id=" . $attempt->quiz . PHP_EOL,
+    3,
+    "/var/log/moodle-debug/debug.log"
+);
 $stmt = $mysqli->prepare($UPDATE_MDLUSER);
 $stmt->bind_param("issiii", $attempt->id, $USER->firstname, $USER->lastname, $USER->id, $cm->course, $attempt->quiz);
 $result = $stmt->execute();
+error_log(
+    "[" . date("Y-m-d H:i:s") . "] " .
+    __FILE__ . ":" . __LINE__ .
+    " SPKDEBUG: startattempt.php UPDATE_MDLUSER executed. affected_rows=" . $mysqli->affected_rows . ", result=" . ($result ? 'true' : 'false') . ", mysqli_error=" . ($mysqli->error ?? 'none') . PHP_EOL,
+    3,
+    "/var/log/moodle-debug/debug.log"
+);
 $stmt->close();
 
 /* Custom code ends */
