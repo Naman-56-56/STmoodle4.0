@@ -108,10 +108,13 @@ error_log(
 );
 if (!$quizid && !empty($SESSION->wantsurl)) {
     $parsed_url = parse_url($SESSION->wantsurl);
-    if (!empty($parsed_url['query'])) {
+    $path = $parsed_url['path'] ?? '';
+    // Only resolve quiz module if wantsurl is actually pointing to a quiz
+    if (strpos($path, '/mod/quiz/') !== false && !empty($parsed_url['query'])) {
         parse_str($parsed_url['query'], $query_params);
-        if (!empty($query_params['id'])) {
-            if ($cm = get_coursemodule_from_id('quiz', (int)$query_params['id'])) {
+        $cmid = !empty($query_params['cmid']) ? (int)$query_params['cmid'] : (!empty($query_params['id']) ? (int)$query_params['id'] : 0);
+        if ($cmid) {
+            if ($cm = get_coursemodule_from_id('quiz', $cmid)) {
                 $quizid = (int)$cm->instance;
             }
         } else if (!empty($query_params['q'])) {
@@ -119,6 +122,13 @@ if (!$quizid && !empty($SESSION->wantsurl)) {
         }
     }
 }
+error_log(
+    "[" . date("Y-m-d H:i:s") . "] " .
+    __FILE__ . ":" . __LINE__ .
+    " SPKDEBUG: enrol/index.php resolved quiz context. quizid=" . $quizid . PHP_EOL,
+    3,
+    "/var/log/moodle-debug/debug.log"
+);
 
 /*
 // Original attendance check (commented out for reference):
