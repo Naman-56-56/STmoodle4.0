@@ -95,6 +95,17 @@ if (is_enrolled($context, $USER, '', true)) {
 
 /* verify test attendance before allowing course enrollment */
 $test_id = optional_param('test_id', optional_param('testid', 0, PARAM_INT), PARAM_INT);
+if (!$test_id && !empty($SESSION->wantsurl)) {
+    $parsed_wantsurl = parse_url($SESSION->wantsurl);
+    if (!empty($parsed_wantsurl['query'])) {
+        parse_str($parsed_wantsurl['query'], $query_params);
+        if (!empty($query_params['test_id'])) {
+            $test_id = (int)$query_params['test_id'];
+        } else if (!empty($query_params['testid'])) {
+            $test_id = (int)$query_params['testid'];
+        }
+    }
+}
 if ($test_id) {
     $SESSION->test_id = $test_id;
 }

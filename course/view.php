@@ -18,6 +18,10 @@
     $marker      = optional_param('marker',-1 , PARAM_INT);
     $switchrole  = optional_param('switchrole',-1, PARAM_INT); // Deprecated, use course/switchrole.php instead.
     $return      = optional_param('return', 0, PARAM_LOCALURL);
+    $test_id     = optional_param('test_id', optional_param('testid', 0, PARAM_INT), PARAM_INT);
+    if ($test_id) {
+        $SESSION->test_id = $test_id;
+    }
 
     error_log("SPKDEBUG: course/view.php called with id=$id, name=$name, idnumber=$idnumber, sectionid=$sectionid, section=$section, move=$move, marker=$marker, switchrole=$switchrole, return=$return");
     $params = array();
