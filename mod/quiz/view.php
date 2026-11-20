@@ -34,6 +34,12 @@ $update_attendance_sql = "update events_testattendance set status = 3, mdlgrade=
 
 $id = optional_param('id', 0, PARAM_INT); // Course Module ID, or ...
 $q = optional_param('q',  0, PARAM_INT);  // Quiz ID.
+$test_id = optional_param('test_id', optional_param('testid', 0, PARAM_INT), PARAM_INT);
+if ($test_id) {
+    $SESSION->test_id = $test_id;
+} else if (!empty($SESSION->test_id)) {
+    $test_id = (int)$SESSION->test_id;
+}
 
 if ($id) {
     if (!$cm = get_coursemodule_from_id('quiz', $id)) {
@@ -179,6 +185,9 @@ $viewobj->canedit = has_capability('mod/quiz:manage', $context);
 $viewobj->editurl = new moodle_url('/mod/quiz/edit.php', array('cmid' => $cm->id));
 $viewobj->backtocourseurl = new moodle_url('/course/view.php', array('id' => $course->id));
 $viewobj->startattempturl = $quizobj->start_attempt_url();
+if ($test_id) {
+    $viewobj->startattempturl->param('test_id', $test_id);
+}
 
 if ($accessmanager->is_preflight_check_required($unfinishedattemptid)) {
     $viewobj->preflightcheckform = $accessmanager->get_preflight_check_form(
@@ -242,7 +251,11 @@ $count = 0;
 * When the user try to attempt the quiz very first time
 */
 
-$sql = "select id from events_testattendance where mdluser_id = ".$USER->id." and mdlcourse_id = ".$quiz->course." and mdlquiz_id = ".$quiz->id." and status >= 1 ";
+if ($test_id) {
+    $sql = "select id from events_testattendance where test_id = ".$test_id." and mdluser_id = ".$USER->id." and mdlcourse_id = ".$quiz->course." and mdlquiz_id = ".$quiz->id." and status >= 1 ";
+} else {
+    $sql = "select id from events_testattendance where mdluser_id = ".$USER->id." and mdlcourse_id = ".$quiz->course." and mdlquiz_id = ".$quiz->id." and status >= 1 ";
+}
 
 $result = $mysqli->query($sql);
 $count = $result->num_rows;
@@ -315,8 +328,16 @@ if($count || $quiz->course == 7){
         }
     }
     /* original data  end */
+    if (!$test_id && $quiz->course != 7 && !has_capability('mod/quiz:manage', $context)) {
+        $viewobj->buttontext = '';
+        $viewobj->preventmessages = array("Please access this test from your Spoken Tutorial Student Dashboard.");
+    }
 } else{
-    $viewobj->preventmessages = array("Your test attendance is not marked.");
+    if (!$test_id && $quiz->course != 7 && !has_capability('mod/quiz:manage', $context)) {
+        $viewobj->preventmessages = array("Please access this test from your Spoken Tutorial Student Dashboard.");
+    } else {
+        $viewobj->preventmessages = array("Your test attendance is not marked.");
+    }
 }
 
 

@@ -94,6 +94,10 @@ if (is_enrolled($context, $USER, '', true)) {
 }
 
 /* verify test attendance before allowing course enrollment */
+$test_id = optional_param('test_id', optional_param('testid', 0, PARAM_INT), PARAM_INT);
+if ($test_id) {
+    $SESSION->test_id = $test_id;
+}
 include_once($CFG->dirroot . '/mod/quiz/spoken-config.php');
 $attendance_marked = false;
 $att_sql = "SELECT id FROM events_testattendance WHERE mdluser_id = ? AND mdlcourse_id = ? AND status >= 1";

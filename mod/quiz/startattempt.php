@@ -30,12 +30,16 @@ require_once(__DIR__ . '/../../config.php');
 require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 
 
-$UPDATE_MDLUSER = "update events_testattendance set status = 2, mdlattempt_id = ?, mdluser_firstname = ?, mdluser_lastname = ? where mdluser_id = ? and mdlcourse_id = ? and mdlquiz_id = ?";
+$UPDATE_MDLUSER = "update events_testattendance set status = 2, mdlattempt_id = ?, mdluser_firstname = ?, mdluser_lastname = ? where test_id = ? and mdluser_id = ? and mdlcourse_id = ? and mdlquiz_id = ?";
 
 // Get submitted parameters.
 $id = required_param('cmid', PARAM_INT); // Course module id
 $forcenew = optional_param('forcenew', false, PARAM_BOOL); // Used to force a new preview
 $page = optional_param('page', -1, PARAM_INT); // Page to jump to in the attempt.
+$test_id = optional_param('test_id', optional_param('testid', 0, PARAM_INT), PARAM_INT);
+if (!$test_id && !empty($SESSION->test_id)) {
+    $test_id = (int)$SESSION->test_id;
+}
 
 if (!$cm = get_coursemodule_from_id('quiz', $id)) {
     print_error('invalidcoursemodule');
@@ -54,6 +58,10 @@ $PAGE->set_cacheable(false);
 require_login($quizobj->get_course(), false, $quizobj->get_cm());
 require_sesskey();
 $PAGE->set_heading($quizobj->get_course()->fullname);
+
+if (!$test_id && $cm->course != 7 && !$quizobj->has_capability('mod/quiz:manage')) {
+    print_error('Please access this test from your Spoken Tutorial Student Dashboard.', 'quiz', $quizobj->view_url());
+}
 
 // If no questions have been set up yet redirect to edit.php or display an error.
 if (!$quizobj->has_questions()) {
@@ -117,10 +125,10 @@ if ($currentattemptid) {
 global $USER;
 include_once('spoken-config.php');
 
-$attendance_check_sql = "SELECT id FROM events_testattendance WHERE mdluser_id = ? AND mdlcourse_id = ? AND mdlquiz_id = ? AND status >= 1";
+$attendance_check_sql = "SELECT id FROM events_testattendance WHERE test_id = ? AND mdluser_id = ? AND mdlcourse_id = ? AND mdlquiz_id = ? AND status >= 1";
 $stmt = $mysqli->prepare($attendance_check_sql);
 $quizid = $quizobj->get_quizid();
-$stmt->bind_param("iii", $USER->id, $cm->course, $quizid);
+$stmt->bind_param("iiii", $test_id, $USER->id, $cm->course, $quizid);
 $stmt->execute();
 $res = $stmt->get_result();
 $is_marked = ($res && $res->num_rows > 0);
@@ -141,7 +149,7 @@ $attempt = quiz_prepare_and_start_new_attempt($quizobj, $attemptnumber, $lastatt
 
 /* where you run the query */
 $stmt = $mysqli->prepare($UPDATE_MDLUSER);
-$stmt->bind_param("issiii", $attempt->id, $USER->firstname, $USER->lastname, $USER->id, $cm->course, $attempt->quiz);
+$stmt->bind_param("issiiii", $attempt->id, $USER->firstname, $USER->lastname, $test_id, $USER->id, $cm->course, $attempt->quiz);
 $result = $stmt->execute();
 $stmt->close();
 
